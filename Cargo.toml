@@ -1,0 +1,12 @@
+[package]
+name = "firestoredb"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+env_util = { git = "https://github.com/WiggidyW/env_util_rs.git" }
+gcloud-sdk = { version = "0.20" }
+firestore = { version = "0.32" }
+serde = { version = "1.0" }
