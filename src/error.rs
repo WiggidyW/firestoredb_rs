@@ -1,7 +1,4 @@
-use std::{
-    error::Error as StdError,
-    fmt::Display,
-};
+use std::{error::Error as StdError, fmt::Display};
 
 use env_util;
 
@@ -18,11 +15,7 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Initialize(e) => write!(
-                f,
-                "Error initializing FirestoreDb: {}",
-                e,
-            ),
+            Error::Initialize(e) => write!(f, "Error initializing FirestoreDb: {}", e,),
             Error::Write(e) => write!(f, "Error Writing to Firestore: {}", e),
             Error::Read(e) => write!(f, "Error Reading from Firestore: {}", e),
             Error::Env(e) => e.fmt(f),

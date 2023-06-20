@@ -35,14 +35,10 @@ pub fn collection_path(
     Ok(env_util::get(&key)
         .with_default_checked(default)?
         .then_fn_str_into(|s| format!("{doc_path}/{s}"))
-        .into_inner()
-    )
+        .into_inner())
 }
 
-pub fn max_retries(
-    namespace: impl Display,
-    default: usize,
-) -> Result<usize, Error> {
+pub fn max_retries(namespace: impl Display, default: usize) -> Result<usize, Error> {
     let key = format!("{namespace}_{MAX_RETRIES}");
     Ok(match env_util::get(&key).optional_checked()? {
         Some(v) => v.then_try_fromstr_into()?.into_inner(),
@@ -50,19 +46,16 @@ pub fn max_retries(
     })
 }
 
-pub fn scopes(
-    namespace: impl Display,
-    default: fn() -> Vec<String>,
-) -> Result<Vec<String>, Error> {
+pub fn scopes(namespace: impl Display, default: fn() -> Vec<String>) -> Result<Vec<String>, Error> {
     let key = format!("{namespace}_{SCOPES}");
     Ok(match env_util::get(&key).optional_checked()? {
         Some(v) => v
-            .then_fn_str_into(|s| s
-                .split(',')
-                .map(|s| s.trim())
-                .map(|s| s.to_string())
-                .collect()
-            )
+            .then_fn_str_into(|s| {
+                s.split(',')
+                    .map(|s| s.trim())
+                    .map(|s| s.to_string())
+                    .collect()
+            })
             .into_inner(),
         None => default(),
     })

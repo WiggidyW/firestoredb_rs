@@ -1,7 +1,4 @@
-use crate::{
-    error::Error,
-    env,
-};
+use crate::{env, error::Error};
 
 use std::fmt::Display;
 
@@ -23,17 +20,14 @@ impl FirestoreDb {
         let inner = firestore::FirestoreDb::with_options_token_source(
             FirestoreDbOptions {
                 google_project_id: env::project_id(&namespace)?,
-                max_retries: env::max_retries(
-                    &namespace,
-                    DEFAULT_MAX_RETRIES,
-                )?,
+                max_retries: env::max_retries(&namespace, DEFAULT_MAX_RETRIES)?,
                 firebase_api_url: None,
             },
             env::scopes(&namespace, || GCP_DEFAULT_SCOPES.clone())?,
             TokenSourceType::Json(env::credentials(&namespace)?),
         )
-            .await
-            .map_err(|e| Error::Initialize(e))?;
+        .await
+        .map_err(|e| Error::Initialize(e))?;
 
         let collection = env::collection(&namespace)?;
 
@@ -42,14 +36,15 @@ impl FirestoreDb {
             DEFAULT_COLLECTION_PATH,
             inner.get_documents_path(),
         )?;
-        
-        Ok(Self { inner, collection, collection_path })
+
+        Ok(Self {
+            inner,
+            collection,
+            collection_path,
+        })
     }
 
-    pub async fn read<O>(
-        &self,
-        document_id: impl AsRef<str> + Send,
-    ) -> Result<Option<O>, Error>
+    pub async fn read<O>(&self, document_id: impl AsRef<str> + Send) -> Result<Option<O>, Error>
     where
         for<'de> O: Deserialize<'de> + Send,
     {
