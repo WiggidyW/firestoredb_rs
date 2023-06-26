@@ -28,14 +28,22 @@ pub fn collection(namespace: impl Display) -> Result<String, Error> {
 
 pub fn collection_path(
     namespace: impl Display,
-    default: &str,
-    doc_path: &String,
-) -> Result<String, Error> {
+    // default: &str,
+    // doc_path: &String,
+) -> Result<Option<Vec<String>>, Error> {
     let key = format!("{namespace}_{COLLECTION_PATH}");
-    Ok(env_util::get(&key)
-        .with_default_checked(default)?
-        .then_fn_str_into(|s| format!("{doc_path}/{s}"))
-        .into_inner())
+    Ok(match env_util::get(&key).optional_checked()? {
+        Some(v) => Some(
+            v.then_fn_str_into(|s| {
+                s.split('/')
+                    .map(|s| s.trim())
+                    .map(|s| s.to_string())
+                    .collect()
+            })
+            .into_inner(),
+        ),
+        None => None,
+    })
 }
 
 pub fn max_retries(namespace: impl Display, default: usize) -> Result<usize, Error> {

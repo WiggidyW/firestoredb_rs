@@ -6,6 +6,7 @@ use firestore;
 
 #[derive(Debug)]
 pub enum Error {
+    InvalidCollectionPath(Vec<String>),
     Initialize(firestore::errors::FirestoreError),
     Write(firestore::errors::FirestoreError),
     Read(firestore::errors::FirestoreError),
@@ -15,6 +16,9 @@ pub enum Error {
 impl Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            Error::InvalidCollectionPath(s) => {
+                write!(f, "Invalid Collection Path (odd length): {:?}", s)
+            }
             Error::Initialize(e) => write!(f, "Error initializing FirestoreDb: {}", e,),
             Error::Write(e) => write!(f, "Error Writing to Firestore: {}", e),
             Error::Read(e) => write!(f, "Error Reading from Firestore: {}", e),
@@ -26,6 +30,7 @@ impl Display for Error {
 impl StdError for Error {
     fn source(&self) -> Option<&(dyn StdError + 'static)> {
         match self {
+            Error::InvalidCollectionPath(_) => None,
             Error::Initialize(e) => Some(e),
             Error::Write(e) => Some(e),
             Error::Read(e) => Some(e),

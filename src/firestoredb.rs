@@ -7,12 +7,11 @@ use gcloud_sdk::{TokenSourceType, GCP_DEFAULT_SCOPES};
 use serde::{Deserialize, Serialize};
 
 const DEFAULT_MAX_RETRIES: usize = 3;
-const DEFAULT_COLLECTION_PATH: &str = "";
 
 pub struct FirestoreDb {
     inner: firestore::FirestoreDb,
     collection: String,
-    collection_path: String,
+    collection_path: Option<String>,
 }
 
 impl FirestoreDb {
@@ -31,11 +30,23 @@ impl FirestoreDb {
 
         let collection = env::collection(&namespace)?;
 
-        let collection_path = env::collection_path(
-            &namespace,
-            DEFAULT_COLLECTION_PATH,
-            inner.get_documents_path(),
-        )?;
+        let collection_path = match env::collection_path(&namespace)? {
+            Some(v) if v.len() % 2 != 0 => return Err(Error::InvalidCollectionPath(v)),
+            Some(v) => {
+                let mut builder = inner
+                    .parent_path::<&str>(v[v.len() - 2].as_ref(), v[v.len() - 1].as_ref())
+                    .map_err(|e| Error::Initialize(e))?;
+                if v.len() > 2 {
+                    for tuple in v[..v.len() - 2].rchunks(2) {
+                        builder = builder
+                            .at::<&str>(tuple[0].as_ref(), tuple[1].as_ref())
+                            .map_err(|e| Error::Initialize(e))?;
+                    }
+                }
+                Some(builder.into())
+            }
+            None => None,
+        };
 
         Ok(Self {
             inner,
@@ -48,11 +59,12 @@ impl FirestoreDb {
     where
         for<'de> O: Deserialize<'de> + Send,
     {
-        self.inner
-            .fluent()
-            .select()
-            .by_id_in(&self.collection)
-            .parent(&self.collection_path)
+        let query = self.inner.fluent().select().by_id_in(&self.collection);
+        let query = match &self.collection_path {
+            Some(path) => query.parent(path),
+            None => query,
+        };
+        query
             .obj::<O>()
             .one(document_id)
             .await
@@ -67,12 +79,17 @@ impl FirestoreDb {
     where
         for<'de> O: Deserialize<'de> + Serialize + Send + Sync,
     {
-        self.inner
+        let query = self
+            .inner
             .fluent()
             .update()
             .in_col(&self.collection)
-            .document_id(document_id)
-            // .parent(&self.collection_path)
+            .document_id(document_id);
+        let query = match &self.collection_path {
+            Some(path) => query.parent(path),
+            None => query,
+        };
+        query
             .object(&object)
             .execute()
             .await
