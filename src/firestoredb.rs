@@ -72,7 +72,7 @@ impl FirestoreDb {
             .update()
             .in_col(&self.collection)
             .document_id(document_id)
-            .parent(&self.collection_path)
+            // .parent(&self.collection_path)
             .object(&object)
             .execute()
             .await
